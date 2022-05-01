@@ -55,22 +55,54 @@ function checkIfUserExists() {
 	fi
 }
 
+function determineOS() {
+	OS=$(cat /etc/*-release | head -n 1 | cut -d' ' -f1)
+	echo -e "[ ${YELLOW}INFO${NC} ]: Operating system determined: ${GREEN}${OS}${NC}"
+}
+
 # update the system -- do not upgrade -- do not want to break anything
 function updateSystem() {
-	echo -e "[ ${YELLOW}INFO${NC} ]: System is updating.."
-	apt update -y
-	echo -e "[ ${YELLOW}INFO${NC} ]: System updated!"
+	OS=$(cat /etc/*-release | head -n 1 | cut -d' ' -f1)
+
+	if [[ ${OS} =~ "Fedora" ]] ; then
+
+		echo -e "[ ${YELLOW}INFO${NC} ]: System is updating.."
+		dnf update -y
+		echo -e "[ ${YELLOW}INFO${NC} ]: System updated!"
+
+	elif [[ ${OS} =~ "Ubuntu" ]] || [[ ${OS} =~ "Debian" ]] ; then
+
+		echo -e "[ ${YELLOW}INFO${NC} ]: System is updating.."
+		apt update -y 
+		echo -e "[ ${YELLOW}INFO${NC} ]: System updated!"
+	fi
 }
 
 # We need certain dependencies in order to continue with proper installation
 function installDependencies() {
-
 	echo -e "[ ${YELLOW}INFO${NC} ]: Installing dependencies now..."
-	apt-get -y install jq snapd git dnsutils whois python3 python3-pip libpcap-dev nodejs vim curl wget tree zip nmap #npm
-	#npm i install-peerdeps
-	pip3 install --upgrade pip
-	pip3 install requests
-	pip3 install pyOpenSSL --upgrade
+	OS=$(cat /etc/*-release | head -n 1 | cut -d' ' -f1)
+
+	if [[ ${OS} =~ "Fedora" ]] ; then
+
+		dnf install python3 python3-pip -y
+
+		dnf install jq snapd git bind-utils whois libpcap-devel nodejs vim curl wget tree zip nmap -y
+		ln -s /var/lib/snapd/snap /snap
+		pip3 install --upgrade pip
+		pip3 install requests
+		pip3 install pyOpenSSL --upgrade
+		
+
+	elif [[ ${OS} =~ "Ubuntu" ]] || [[ ${OS} =~ "Debian" ]] ; then
+
+		apt-get -y install jq snapd git dnsutils whois python3 python3-pip libpcap-dev nodejs vim curl wget tree zip nmap
+		ln -s /var/lib/snapd/snap /snap
+		pip3 install --upgrade pip
+		pip3 install requests
+		pip3 install pyOpenSSL --upgrade
+		
+	fi
 }
 
 # Create tool directory inside usernames home directory
@@ -365,6 +397,8 @@ function installDnsgen() {
 
 function installLinkFinder() {
 
+		echo -e "[ ${YELLOW}INFO${NC} ]: Installing LinkFinder."
+
         if [ ${username} != "root" ] ; then
 
         if [ ! -d /home/${username}/tools/LinkFinder ] ; then
@@ -390,6 +424,8 @@ function installLinkFinder() {
 
 function installDNSScan() {
 
+		echo -e "[ ${YELLOW}INFO${NC} ]: Installing DNSscan."
+
         if [ ${username} != "root" ] ; then
 
         if [ ! -d /home/${username}/tools/dnscan ] ; then
@@ -412,8 +448,19 @@ function installDNSScan() {
 }
 
 installASN() {
-	# install prerequisites
-	apt -y install curl whois bind9-host mtr-tiny jq ipcalc grepcidr nmap ncat aha
+
+	echo -e "[ ${YELLOW}INFO${NC} ]: Installing ASN script."
+
+	OS=$(cat /etc/*-release | head -n 1 | cut -d' ' -f1)
+
+	if [[ ${OS} =~ "Fedora" ]] ; then
+		dnf install curl whois bind bind-utils ipcalc grepcidr nc aha -y
+
+	elif [[ ${OS} =~ "Ubuntu" ]] || [[ ${OS} =~ "Debian" ]] ; then
+		# install prerequisites
+		apt -y install bind9-host mtr-tiny ipcalc grepcidr ncat aha
+
+	fi
 
 	if [ ${username} != "root" ] ; then
 
@@ -437,6 +484,8 @@ installASN() {
 
 installDNSRecon() {
 
+	echo -e "[ ${YELLOW}INFO${NC} ]: Installing DNSRecon."
+
 	if [ ${username} != "root" ] ; then
 
 		if [ ! -d /home/${username}/tools/dnsrecon ] ; then
@@ -458,6 +507,9 @@ installDNSRecon() {
 }
 
 install403Bypasser() {
+
+	echo -e "[ ${YELLOW}INFO${NC} ]: Installing 403Bypasser."
+
 	if [ ${username} != "root" ] ; then
 
 		if [ ! -d /home/${username}/tools/403bypasser ] ; then
@@ -597,6 +649,8 @@ function installGF() {
 }
 
 function installSecLists() {
+
+	echo -e "[ ${YELLOW}INFO${NC} ]: Grabbing SecLists wordlists."
 	
 	if [ ${username} != "root" ] ; then
 		
@@ -621,6 +675,127 @@ function installSecLists() {
 	fi
 }
 
+function installCloudFlair() {
+
+	echo -e "[ ${YELLOW}INFO${NC} ]: Installing CloudFlair."
+
+	if [ ${username}  != "root" ] ; then
+		
+		if [ ! -d /home/${username}/tools/cloudflair/ ] ; then
+			git clone https://github.com/christophetd/cloudflair.git /home/${username}/tools/cloudflair
+			cd /home/${username}/tools/cloudflair && pip3 install -r  requirements.txt
+
+		fi
+		
+
+	elif [ ${username} == "root" ] ; then
+
+		if [ ! -d /root/tools/cloudflair/ ] ; then
+			git clone https://github.com/christophetd/cloudflair.git /home/${username}/tools/cloudflair
+			cd /root/tools/cloudflair && pip3 install -r  requirements.txt
+
+		fi
+		
+
+	fi
+}
+
+# Install Mobile Tools
+
+function makeMobileDir() {
+
+	if [ ${username}  != "root" ] ; then
+		
+		if [ ! -d /home/${username}/mobile/ ] ; then
+			mkdir /home/${username}/mobile
+
+		fi
+
+	elif [ ${username} == "root" ] ; then
+
+		if [ ! -d /root/mobile/ ] ; then
+			mkdir /root/mobile/
+
+		fi
+
+	fi
+}
+
+function installAPKTools() {
+
+	echo -e "[ ${YELLOW}INFO${NC} ]: Installing APKTools."
+
+	# https://ibotpeaches.github.io/Apktool/install/
+
+    # Download Linux wrapper script (Right click, Save Link As apktool)
+    # Download apktool-2 (find newest here)
+    # Rename downloaded jar to apktool.jar
+    # Move both files (apktool.jar & apktool) to /usr/local/bin (root needed)
+    # Make sure both files are executable (chmod +x)
+    # Try running apktool via cli
+
+	# get latest version like 2.16.1
+	latestVersion=$(curl -s https://api.github.com/repos/iBotPeaches/Apktool/releases | jq .[]."name" | cut -d' ' -f2 | sed 's/"//g' | head -n 1 | sed 's/^[v]//g')
+
+	# get apktool script, latest version, and move to /usr/local/bin with correct permissions
+	wget "https://raw.githubusercontent.com/iBotPeaches/Apktool/master/scripts/linux/apktool" && wget "https://github.com/iBotPeaches/Apktool/releases/download/v${latestVersion}/apktool_${latestVersion}.jar"
+	mv "apktool_${latestVersion}.jar" apktool.jar
+	chmod +x apktool*
+	mv apktool* /usr/local/bin/ && chmod +x /usr/local/bin/apktool*
+}
+
+function installAPKLeaks() {
+
+	echo -e "[ ${YELLOW}INFO${NC} ]: Installing APKLeaks."
+
+	if [ ${username}  != "root" ] ; then
+		
+		if [ ! -d /home/${username}/tools/apkleaks/ ] ; then
+			git clone https://github.com/dwisiswant0/apkleaks.git /home/${username}/tools/apkleaks
+
+		fi
+
+	elif [ ${username} == "root" ] ; then
+
+		if [ ! -d /root/tools/apkleaks/ ] ; then
+			git clone https://github.com/dwisiswant0/apkleaks.git /root/tools/apkleaks
+
+		fi
+
+	fi
+	
+}
+
+function installGMapsAPIScanner() {
+
+	echo -e "[ ${YELLOW}INFO${NC} ]: Installing gmapsapiscanner."
+
+	if [ ${username}  != "root" ] ; then
+		
+		if [ ! -d /home/${username}/tools/gmapsapiscanner/ ] ; then
+			git clone https://github.com/ozguralp/gmapsapiscanner.git /home/${username}/tools/gmapsapiscanner
+
+		fi
+
+	elif [ ${username} == "root" ] ; then
+
+		if [ ! -d /root/tools/gmapsapiscanner/ ] ; then
+			git clone https://github.com/ozguralp/gmapsapiscanner.git /root/tools/gmapsapiscanner
+
+		fi
+
+	fi
+	
+}
+
+function installOWASPZap() {
+
+	echo -e "[ ${YELLOW}INFO${NC} ]: Installing OWASPZap."
+
+	snap install zaproxy --classic
+
+}
+
 function main() {
 
 	DATE=$(date)
@@ -631,9 +806,10 @@ function main() {
 	NC='\033[0m'
 	
 
-	# Check if user is root and if user's supplied username exists
+	# Check if user is root and if user's supplied username exists -- get OS
 	checkIfRoot
 	checkIfUserExists
+	determineOS
 
 	# Update system before we begin.
 	updateSystem
@@ -670,6 +846,16 @@ function main() {
 	installDNSRecon
 	install403Bypasser
 	installSecLists
+	installCloudFlair
+
+	# mobile
+	makeMobileDir
+	installAPKTools
+	installAPKLeaks
+	installGMapsAPIScanner
+
+	# DAST
+	installOWASPZap
 
 	if [ ${username} != "root" ] ; then
 	    cp -r /root/go/ /home/${username}/
