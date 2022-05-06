@@ -87,7 +87,7 @@ function installDependencies() {
 
 		dnf install python3 python3-pip -y
 
-		dnf install jq snapd git bind-utils whois libpcap-devel nodejs vim curl wget tree zip nmap -y
+		dnf install jq snapd git bind-utils whois libpcap-devel nodejs vim curl wget tree zip nmap ruby-devel -y
 		ln -s /var/lib/snapd/snap /snap
 		pip3 install --upgrade pip
 		pip3 install requests
@@ -96,7 +96,7 @@ function installDependencies() {
 
 	elif [[ ${OS} =~ "Ubuntu" ]] || [[ ${OS} =~ "Debian" ]] ; then
 
-		apt-get -y install jq snapd git dnsutils whois python3 python3-pip libpcap-dev nodejs vim curl wget tree zip nmap
+		apt-get -y install jq snapd git dnsutils whois python3 python3-pip libpcap-dev nodejs vim curl wget tree zip nmap ruby-full
 		ln -s /var/lib/snapd/snap /snap
 		pip3 install --upgrade pip
 		pip3 install requests
@@ -796,6 +796,35 @@ function installOWASPZap() {
 
 }
 
+function installRuby() {
+	
+	if ! $(command -v ruby --version &> /dev/null) ; then
+		echo -e "[ ${RED}ERROR${NC} ]: Ruby version not detected. May need manual installation."
+
+	elif $(command -v ruby --version &> /dev/null) ; then
+		echo -e "[ ${GREEN}PASSED${NC} ]: $(ruby --version | awk '{print $1 $2}') detected!"
+
+	fi
+}
+
+function installLazys3() {
+	installRuby
+
+	if [ ${username} != "root" ] ; then
+
+		if [ ! -d /home/${username}/tools/lazys3 ] ; then
+			git clone https://github.com/nahamsec/lazys3.git /home/${username}/tools/lazys3
+        fi
+
+    elif [ ${username} == "root" ] ; then
+
+    	if [ ! -d /root/tools/lazys3 ] ; then
+			git clone https://github.com/nahamsec/lazys3.git /root/tools/lazys3
+        fi
+
+    fi
+}
+
 function main() {
 
 	DATE=$(date)
@@ -847,6 +876,7 @@ function main() {
 	install403Bypasser
 	installSecLists
 	installCloudFlair
+	installLazys3
 
 	# mobile
 	makeMobileDir
