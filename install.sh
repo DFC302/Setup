@@ -881,6 +881,33 @@ function installIISShortNameScanner() {
     fi
 }
 
+function installXNLinkfinder() {
+	echo -e "[ ${YELLOW}INFO${NC} ]: Installing xnlinkfinder."
+
+	if [ ${username} != "root" ] ; then
+
+		if [ ! -d /home/${username}/tools/xnlinkfinder ] ; then
+			git clone https://github.com/xnl-h4ck3r/xnLinkFinder.git /home/${username}/tools/xnlinkfinder
+        fi
+
+        cd /home/${username}/tools/xnlinkfinder && python3 setup.py install
+
+    elif [ ${username} == "root" ] ; then
+
+    	if [ ! -d /root/tools/xnlinkfinder ] ; then
+			git clone https://github.com/xnl-h4ck3r/xnLinkFinder.git /root/tools/xnlinkfinder
+        fi
+
+        cd /root/tools/xnlinkfinder/xnlinkfinder && python3 setup.py install
+
+    fi
+}
+
+function installWebAnalyze() {
+	echo -e "[ ${YELLOW}INFO${NC} ]: Installing webanalyze."
+	/root/.go/bin/go get -v -u github.com/rverton/webanalyze/cmd/webanalyz && webanalyze -update
+}
+
 function main() {
 
 	DATE=$(date)
@@ -934,6 +961,8 @@ function main() {
 	installCloudFlair
 	installLazys3
 	installIISShortNameScanner
+	installXNLinkfinder
+	installWebAnalyze
 
 	# mobile
 	makeMobileDir
