@@ -87,7 +87,7 @@ function installDependencies() {
 
 		dnf install python3 python3-pip -y
 
-		dnf install jq snapd git bind-utils whois libpcap-devel nodejs vim curl wget tree zip nmap ruby-devel -y
+		dnf install jq snapd git bind-utils whois libpcap-devel nodejs vim curl wget tree zip nmap ruby-devel java-latest-openjdk.x86_64 -y
 		ln -s /var/lib/snapd/snap /snap
 		pip3 install --upgrade pip
 		pip3 install requests
@@ -96,7 +96,7 @@ function installDependencies() {
 
 	elif [[ ${OS} =~ "Ubuntu" ]] || [[ ${OS} =~ "Debian" ]] ; then
 
-		apt-get -y install jq snapd git dnsutils whois python3 python3-pip libpcap-dev nodejs vim curl wget tree zip nmap ruby-full
+		apt-get -y install jq snapd git dnsutils whois python3 python3-pip libpcap-dev nodejs vim curl wget tree zip nmap ruby-full default-jdk
 		ln -s /var/lib/snapd/snap /snap
 		pip3 install --upgrade pip
 		pip3 install requests
@@ -788,6 +788,28 @@ function installGMapsAPIScanner() {
 	
 }
 
+function getFridaScript() {
+	
+	echo -e "[ ${YELLOW}INFO${NC} ]: Installing frida SSL bypass script."
+
+	if [ ${username}  != "root" ] ; then
+		
+		if [ ! -d /home/${username}/tools/frida-android-unpinning/ ] ; then
+			git clone https://github.com/httptoolkit/frida-android-unpinning.git /home/${username}/tools/frida-android-unpinning
+
+		fi
+
+	elif [ ${username} == "root" ] ; then
+
+		if [ ! -d /root/tools/gmapsapiscanner/ ] ; then
+			git clone https://github.com/httptoolkit/frida-android-unpinning.git /root/tools/frida-android-unpinning
+
+		fi
+
+	fi
+
+}
+
 function installOWASPZap() {
 
 	echo -e "[ ${YELLOW}INFO${NC} ]: Installing OWASPZap."
@@ -796,7 +818,7 @@ function installOWASPZap() {
 
 }
 
-function installRuby() {
+function checkRuby() {
 	
 	if ! $(command -v ruby --version &> /dev/null) ; then
 		echo -e "[ ${RED}ERROR${NC} ]: Ruby version not detected. May need manual installation."
@@ -808,7 +830,9 @@ function installRuby() {
 }
 
 function installLazys3() {
-	installRuby
+	checkRuby
+
+	echo -e "[ ${YELLOW}INFO${NC} ]: Installing lazys3."
 
 	if [ ${username} != "root" ] ; then
 
@@ -820,6 +844,37 @@ function installLazys3() {
 
     	if [ ! -d /root/tools/lazys3 ] ; then
 			git clone https://github.com/nahamsec/lazys3.git /root/tools/lazys3
+        fi
+
+    fi
+}
+
+function checkJava() {
+
+	if ! $(command -v java --version &> /dev/null) ; then
+		echo -e "[ ${RED}ERROR${NC} ]: Java version not detected. May need manual installation."
+
+	elif $(command -v java --version &> /dev/null) ; then
+		echo -e "[ ${GREEN}PASSED${NC} ]: $(Java --version | awk '{print $1 $2}') detected!"
+
+	fi
+}
+
+function installIISShortNameScanner() {
+	checkJava
+
+	echo -e "[ ${YELLOW}INFO${NC} ]: Installing IIS ShortName Scanner."
+
+	if [ ${username} != "root" ] ; then
+
+		if [ ! -d /home/${username}/tools/IIS-ShortName-Scanner ] ; then
+			git clone https://github.com/irsdl/IIS-ShortName-Scanner.git /home/${username}/tools/IIS-ShortName-Scanner
+        fi
+
+    elif [ ${username} == "root" ] ; then
+
+    	if [ ! -d /root/tools/IIS-ShortName-Scanner ] ; then
+			git clone https://github.com/irsdl/IIS-ShortName-Scanner.git /root/tools/IIS-ShortName-Scanner
         fi
 
     fi
@@ -877,12 +932,14 @@ function main() {
 	installSecLists
 	installCloudFlair
 	installLazys3
+	installIISShortNameScanner
 
 	# mobile
 	makeMobileDir
 	installAPKTools
 	installAPKLeaks
 	installGMapsAPIScanner
+	getFridaScript
 
 	# DAST
 	installOWASPZap
@@ -897,6 +954,7 @@ function main() {
 	echo -e "[ ${YELLOW}INFO${NC} ]: You may need to restart the terminal for everything to take effect"
 	echo -e "[ ${YELLOW}INFO${NC} ]: Don't forget to source your .bashrc/.zshrc file."
 	echo -e "[ ${YELLOW}INFO${NC} ]: [ How-To? ]: source ~/.bashrc or source ~/.zshrc"
+	echo -e "[ ${YELLOW}INFO${NC} ]: The correct frida server will also still need to be downloaded for your device."
 
 	exit
 }
