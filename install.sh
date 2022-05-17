@@ -288,8 +288,9 @@ function installHttprobe() {
 
 function installAquatone() {
 	echo -e "[ ${YELLOW}INFO${NC} ]: Installing aquatone."
-	wget https://github.com/michenriksen/aquatone/releases/download/v1.7.0/aquatone_linux_amd64_1.7.0.zip
-	unzip -u aquatone_linux_amd64_1.7.0.zip
+	latestVersion=$(curl -s https://api.github.com/repos/michenriksen/aquatone/releases/latest | jq ."assets"[]."browser_download_url" | head -n 1 | sed 's/"//g')
+	wget ${latestVersion}
+	unzip -u aquatone_linux_amd64_*
 	mv aquatone /root/go/bin
 	rm LICENSE* README* aquatone_linux_amd64_1.7.0.zip*
 }
